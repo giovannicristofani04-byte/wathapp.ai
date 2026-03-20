@@ -1,0 +1,20 @@
+{
+  "name": "whatsapp-webhook-railway",
+  "version": "1.0.0",
+  "description": "Webhook WhatsApp Cloud API pronto per il deploy su Railway",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "webhook",
+    "express",
+    "railway"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
