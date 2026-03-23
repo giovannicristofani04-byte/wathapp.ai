@@ -1,5 +1,32 @@
+const express = require("express");
 const axios = require("axios");
 
+const app = express();
+app.use(express.json());
+
+const PORT = process.env.PORT || 3000;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "inboxai_verify";
+
+app.get("/", (_req, res) => {
+  res.status(200).send("Server online");
+});
+
+// Verifica webhook Meta
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  console.log("GET /webhook", req.query);
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+
+  return res.sendStatus(403);
+});
+
+// Ricezione messaggi WhatsApp + risposta automatica
 app.post("/webhook", async (req, res) => {
   console.log("POST ricevuta:");
   console.dir(req.body, { depth: null });
@@ -16,7 +43,6 @@ app.post("/webhook", async (req, res) => {
 
       console.log("Messaggio ricevuto:", text);
 
-      // 👉 RISPOSTA (per ora semplice)
       const reply = `Hai scritto: ${text}`;
 
       await axios.post(
@@ -37,9 +63,13 @@ app.post("/webhook", async (req, res) => {
       console.log("Risposta inviata");
     }
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
   } catch (error) {
     console.error("Errore:", error.response?.data || error.message);
-    res.sendStatus(200);
+    return res.sendStatus(200);
   }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server attivo sulla porta ${PORT}`);
 });
