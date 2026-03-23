@@ -1,50 +1,45 @@
-const express = require("express");
+const axios = require("axios");
 
-const app = express();
+app.post("/webhook", async (req, res) => {
+  console.log("POST ricevuta:");
+  console.dir(req.body, { depth: null });
 
-// Railway assegna la porta tramite variabile d'ambiente.
-// In locale usiamo 3000 come fallback.
-const PORT = process.env.PORT || 3000;
+  try {
+    const entry = req.body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const messages = changes?.value?.messages;
 
-// Token usato da Meta per verificare il webhook.
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+    if (messages && messages.length > 0) {
+      const message = messages[0];
+      const from = message.from;
+      const text = message.text?.body;
 
-// Middleware per leggere body JSON inviati da WhatsApp Cloud API.
-app.use(express.json());
+      console.log("Messaggio ricevuto:", text);
 
-// Endpoint base per controllare rapidamente se il server e' attivo.
-app.get("/", (req, res) => {
-  res.send("Server online");
-});
+      // 👉 RISPOSTA (per ora semplice)
+      const reply = `Hai scritto: ${text}`;
 
-// Endpoint di verifica webhook richiesto da Meta.
-app.get("/webhook", (req, res) => {
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
+      await axios.post(
+        `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
+        {
+          messaging_product: "whatsapp",
+          to: from,
+          text: { body: reply }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    // Meta richiede di restituire ESATTAMENTE il challenge come testo.
-    return res.status(200).send(challenge);
+      console.log("Risposta inviata");
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Errore:", error.response?.data || error.message);
+    res.sendStatus(200);
   }
-
-  return res.sendStatus(403);
-});
-
-// Endpoint che riceve gli eventi WhatsApp.
-app.post("/webhook", (req, res) => {
-  // Log completo del body per debug e sviluppo.
-  console.log("Webhook ricevuto:");
-  console.log(JSON.stringify(req.body, null, 2));
-
-  // Risposta veloce per confermare subito la ricezione.
-  return res.sendStatus(200);
-});
-
-app.listen(PORT, () => {
-  if (!VERIFY_TOKEN) {
-    console.warn("ATTENZIONE: VERIFY_TOKEN non e' impostato nelle variabili d'ambiente.");
-  }
-
-  console.log(`Server in ascolto sulla porta ${PORT}`);
 });
