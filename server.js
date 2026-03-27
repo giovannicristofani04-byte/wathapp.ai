@@ -50,6 +50,7 @@ app.post("/webhook", async (req, res) => {
         {
           messaging_product: "whatsapp",
           to: from,
+          type: "text",
           text: { body: reply }
         },
         {
@@ -59,7 +60,6 @@ app.post("/webhook", async (req, res) => {
           }
         }
       );
-
       console.log("Risposta inviata");
     }
 
